@@ -41,10 +41,10 @@ namespace Syncronizer
         private ChooseNode nodeQuery;
         TcpListener server = null;
         BackgroundWorker serverWorker = new BackgroundWorker();
-        BackgroundWorker copyWorker = new BackgroundWorker();
-        
+
         public Form1()
         {
+            LoadData();
             this.FormClosed += MyClosedHandler;
             InitializeComponent();
             _Init();
@@ -60,20 +60,25 @@ namespace Syncronizer
         {
             serverWorker.DoWork += (_, args) =>
             {
-                
-
                 tasks.Add(Task.Factory.StartNew(() => Server_Start()));
             };
 
             TaskScheduler uiScheduler = TaskScheduler.FromCurrentSynchronizationContext();
             serverWorker.RunWorkerAsync();
-            LoadData();
+            
         }
 
         private void AddNode_Click(object sender, EventArgs e)
         {
-            
-            MessageBox.Show("Hello World!", "Title", MessageBoxButtons.OK);
+
+            List<String> IDs = new List<String>();
+            foreach (var node in Nodes)
+            {
+                IDs.Add(node.Key);
+            }
+
+            AddNode NewNode = new AddNode(IDs);
+            NewNode.Show(this);
         }
 
         private void AddPath_Click(object sender, EventArgs e)
@@ -90,8 +95,7 @@ namespace Syncronizer
             }
 
             nodeQuery = new ChooseNode(IDs);
-            nodeQuery.Owner = this;
-            nodeQuery.ShowDialog();
+            nodeQuery.Show(this);
             List<Task> work = new List<Task>();
 
             if (nodeQuery.getNode() == null) return; //Don't continue if no input was given
@@ -168,6 +172,7 @@ namespace Syncronizer
 
         private void LoadData()
         {
+            
             try
             {
                 if (!File.Exists("C:\\Users\\Korisnik\\Documents\\Node_data.data"))
@@ -189,11 +194,13 @@ namespace Syncronizer
                     Nodes.Add(nodeName, NodePaths);
                     sr.ReadLine();
                 }
+                sr.Close();
             }
             catch(Exception e)
             {
                 Log.Items.Add(e);
             }
+            
         }
 
         private void Server_Start()
