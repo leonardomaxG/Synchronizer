@@ -93,6 +93,9 @@ namespace Syncronizer
             nodeQuery.Owner = this;
             nodeQuery.ShowDialog();
             List<Task> work = new List<Task>();
+
+            if (nodeQuery.getNode() == null) return; //Don't continue if no input was given
+
             CopyNode = nodeQuery.getNode();
             Task.Factory.StartNew(() =>
             {
@@ -108,6 +111,7 @@ namespace Syncronizer
                     }
                 }
             });
+            
             nodeQuery = null;
 
             

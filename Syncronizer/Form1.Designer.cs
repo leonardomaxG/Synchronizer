@@ -90,7 +90,7 @@ namespace Syncronizer
             // 
             // filewrite
             // 
-            this.filewrite.Location = new System.Drawing.Point(350, 370);
+            this.filewrite.Location = new System.Drawing.Point(347, 375);
             this.filewrite.Name = "filewrite";
             this.filewrite.Size = new System.Drawing.Size(75, 23);
             this.filewrite.TabIndex = 6;

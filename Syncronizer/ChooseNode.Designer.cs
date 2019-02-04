@@ -65,6 +65,7 @@
             // 
             // NodeToCopy
             // 
+            this.NodeToCopy.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.NodeToCopy.FormattingEnabled = true;
             this.NodeToCopy.Location = new System.Drawing.Point(95, 16);
             this.NodeToCopy.Name = "NodeToCopy";
