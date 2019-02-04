@@ -2,11 +2,12 @@
 //Prompt the location........................................DONE
 //Log of copied files........................................DONE
 //Copy files if node exists..................................DONE
-//Copy files if node is the same.............................
-//"Data" file
-//Create nodes
+//Copy files if node is the same.............................DONE
+//"Data" file................................................DONE
+//Create nodes...............................................DONE
 //Copy from-only and Copy to-only nodes
 //Password protection
+//Encryption
 //Multi threaded
 //Set up multi-client connection
 //Set remote server connection
@@ -103,8 +104,6 @@ namespace Syncronizer
 
             nodeQuery = new ChooseNode(IDs);
             nodeQuery.Show(this);
-            List<Task> work = new List<Task>();
-
             if (nodeQuery.getNode() == null) return; //Don't continue if no input was given
 
             CopyNode = nodeQuery.getNode();
@@ -140,6 +139,13 @@ namespace Syncronizer
             {
                 //skip the node file
                 if (s == CopyNode + ".node") continue;
+                
+                if(s != CopyNode)
+                {
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add("Node at " + from + " and " + to + " are not the same!.")));
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add("This folder will be skipped!")));
+                    return;
+                }
 
                 fileName = Path.GetFileName(s);
                 destFile = Path.Combine(to, fileName);
