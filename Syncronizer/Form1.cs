@@ -94,29 +94,26 @@ namespace Syncronizer
             nodeQuery.ShowDialog();
             List<Task> work = new List<Task>();
             CopyNode = nodeQuery.getNode();
-
-            for (int i = 0; i < Nodes[CopyNode].Count; i++)
+            Task.Factory.StartNew(() =>
             {
-                for ( int j = i+1; j < Nodes[CopyNode].Count; j++)
+                for (int i = 0; i < Nodes[CopyNode].Count; i++)
                 {
-                    var t = Task.Factory.StartNew(() =>
-                   {
-                       Copy_All(Nodes[CopyNode].ElementAt(i), Nodes[CopyNode].ElementAt(j));
-                       Copy_All(Nodes[CopyNode].ElementAt(j), Nodes[CopyNode].ElementAt(i));
-                   });
+                    for (int j = i + 1; j < Nodes[CopyNode].Count; j++)
+                    {
 
-                    tasks.Add(t);
-                    
-                    
+                        Copy_All(Nodes[CopyNode].ElementAt(i), Nodes[CopyNode].ElementAt(j));
+                        Copy_All(Nodes[CopyNode].ElementAt(j), Nodes[CopyNode].ElementAt(i));
+
+
+                    }
                 }
-            }
-
+            });
             nodeQuery = null;
 
             
         }
 
-        private async void Copy_All(string from, string to)
+        private void Copy_All(string from, string to)
         {
             string fileName;
             string destFile;
@@ -133,9 +130,9 @@ namespace Syncronizer
                 destFile = Path.Combine(to, fileName);
 
                 if (File.Exists(destFile)) continue;  //Don't copy if it exists
-                this.Invoke((MethodInvoker)(() => Log.Items.Add("Now copying: " + fileName + " to " + destFile)));
+                this.Invoke((MethodInvoker)(() => Log.Items.Add("Now copying: " + fileName + " to " + to)));
                 File.Copy(s, destFile, true);
-                await Task.Factory.StartNew(() => this.Invoke((MethodInvoker)(() => Log.Items.Add("Done"))));
+                this.Invoke((MethodInvoker)(() => Log.Items.Add("Done: " + fileName)));
                
             }
             foreach (string s in directories)
@@ -144,7 +141,7 @@ namespace Syncronizer
                 destFile = Path.Combine(to, fileName);
                 if (!Directory.Exists(destFile)) {
                     Directory.CreateDirectory(destFile);
-                   await Task.Factory.StartNew(() => this.Invoke((MethodInvoker)(() => Log.Items.Add("Created directory " + destFile))));
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add("Created directory " + destFile)));
                 }
                 Copy_All(s, destFile);
             }
