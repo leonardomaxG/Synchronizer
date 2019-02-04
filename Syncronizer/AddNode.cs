@@ -29,7 +29,7 @@ namespace Syncronizer
 
         private void Confirm_Click(object sender, EventArgs e)
         {
-            if(Input.Text == String.Empty)
+            if((Input.Text.Trim() == String.Empty))
             {
                 MessageBox.Show("Please enter a name for the node!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
@@ -39,7 +39,9 @@ namespace Syncronizer
             }
             else
             {
-                InputName = Input.Text;
+                InputName = Input.Text.Trim();
+
+
                 StreamWriter sw = new StreamWriter("C:\\Users\\Korisnik\\Documents\\Node_data.data", append: true);
 
                 sw.WriteLine("");

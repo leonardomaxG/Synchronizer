@@ -78,12 +78,19 @@ namespace Syncronizer
             }
 
             AddNode NewNode = new AddNode(IDs);
-            NewNode.Show(this);
+            NewNode.ShowDialog(this);
+            LoadData();
         }
 
         private void AddPath_Click(object sender, EventArgs e)
         {
-
+            AddNodePath NewPath = new AddNodePath(Nodes);
+            NewPath.ShowDialog(this);
+            if (NewPath.Path1 != null)
+            {
+                Log.Items.Add("Created node: " + NewPath.Path1);
+                LoadData();
+            }
         }
 
         private void Copy_Click(object sender, EventArgs e)
@@ -247,6 +254,8 @@ namespace Syncronizer
             }
            
         }
+
+       
     }
     
 }

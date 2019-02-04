@@ -52,6 +52,12 @@
     <Compile Include="AddNode.Designer.cs">
       <DependentUpon>AddNode.cs</DependentUpon>
     </Compile>
+    <Compile Include="AddNodePath.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddNodePath.Designer.cs">
+      <DependentUpon>AddNodePath.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -71,6 +77,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="AddNode.resx">
       <DependentUpon>AddNode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AddNodePath.resx">
+      <DependentUpon>AddNodePath.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
@@ -99,6 +108,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
