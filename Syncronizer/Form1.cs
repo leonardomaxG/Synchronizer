@@ -8,7 +8,7 @@
 //Copy from-only and Copy to-only nodes
 //Password protection
 //Encryption
-//Multi threaded
+//Multi threading
 //Set up multi-client connection
 //Set remote server connection
 //Use ftp for file transfer over network
@@ -80,6 +80,7 @@ namespace Syncronizer
 
             AddNode NewNode = new AddNode(IDs);
             NewNode.ShowDialog(this);
+            Nodes.Clear();
             LoadData();
         }
 
@@ -173,10 +174,6 @@ namespace Syncronizer
             Log.Items.Clear();
         }
 
-        private void Filewrite_Click(object sender, EventArgs e)
-        {
-
-        }
 
         private void WriteData()
         {
@@ -260,8 +257,7 @@ namespace Syncronizer
             }
            
         }
-
-       
+        
     }
     
 }
