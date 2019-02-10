@@ -45,9 +45,10 @@ namespace Syncronizer
 
         public Form1()
         {
-            LoadData();
+            
             this.FormClosed += MyClosedHandler;
             InitializeComponent();
+            LoadData();
             _Init();
 
         }
@@ -59,54 +60,66 @@ namespace Syncronizer
 
         private void _Init()
         {
-            serverWorker.DoWork += (_, args) =>
+            // Start server on a separate thread on init
+            Task.Factory.StartNew(() =>
             {
-                tasks.Add(Task.Factory.StartNew(() => Server_Start()));
-            };
-
-            TaskScheduler uiScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            serverWorker.RunWorkerAsync();
+                Server_Start();
+            });
             
         }
 
         private void AddNode_Click(object sender, EventArgs e)
         {
 
+            // Make a list of node IDs
             List<String> IDs = new List<String>();
             foreach (var node in Nodes)
             {
                 IDs.Add(node.Key);
             }
 
+            // Open dialog window to enter the new node;
             AddNode NewNode = new AddNode(IDs);
             NewNode.ShowDialog(this);
+
+            // Clear the existing node list and load data
             Nodes.Clear();
             LoadData();
         }
 
         private void AddPath_Click(object sender, EventArgs e)
         {
+            // Open dialog window to add new path
             AddNodePath NewPath = new AddNodePath(Nodes);
             NewPath.ShowDialog(this);
+
+            // If path was entered clear node lit and load data
             if (NewPath.Path1 != null)
             {
                 Log.Items.Add("Created node: " + NewPath.Path1);
+                Nodes.Clear();
                 LoadData();
             }
         }
 
         private void Copy_Click(object sender, EventArgs e)
         {
+
+            // Create a list of node IDs
             List<String> IDs = new List<String>();
             foreach (var node in Nodes)
             {
                 IDs.Add(node.Key);
             }
 
+            // Open prompt for selecting the node
             nodeQuery = new ChooseNode(IDs);
             nodeQuery.Show(this);
+
+
             if (nodeQuery.getNode() == null) return; //Don't continue if no input was given
 
+            // Copy all files on a separate thread both ways
             CopyNode = nodeQuery.getNode();
             Task.Factory.StartNew(() =>
             {
@@ -130,41 +143,50 @@ namespace Syncronizer
 
         private void Copy_All(string from, string to)
         {
-            string fileName;
-            string destFile;
+            String fileName;
+            String destFile;
             
-            string[] files = Directory.GetFiles(from);
-            string[] directories = Directory.GetDirectories(from);
+            // Make an array of files and directories in starting folder
+            String[] files = Directory.GetFiles(from);
+            String[] directories = Directory.GetDirectories(from);
 
-            foreach (string s in files)
+            
+            foreach (String s in files)
             {
-                //skip the node file
+                // Skip the node file
                 if (s == CopyNode + ".node") continue;
                 
+                // Skip the folder if nodes are not the same (will be changed)
                 if(s != CopyNode)
                 {
                     this.Invoke((MethodInvoker)(() => Log.Items.Add("Node at " + from + " and " + to + " are not the same!.")));
                     this.Invoke((MethodInvoker)(() => Log.Items.Add("This folder will be skipped!")));
                     return;
                 }
-
+                // Determine destination file path
                 fileName = Path.GetFileName(s);
                 destFile = Path.Combine(to, fileName);
 
-                if (File.Exists(destFile)) continue;  //Don't copy if it exists
+                // Don't copy if it exists
+                if (File.Exists(destFile)) continue;  
                 this.Invoke((MethodInvoker)(() => Log.Items.Add("Now copying: " + fileName + " to " + to)));
+
+                //Copy the files
                 File.Copy(s, destFile, true);
                 this.Invoke((MethodInvoker)(() => Log.Items.Add("Done: " + fileName)));
                
             }
             foreach (string s in directories)
             {
+                // Determine destination directory and create it if it doesn't exist
                 fileName = Path.GetFileName(s);
                 destFile = Path.Combine(to, fileName);
                 if (!Directory.Exists(destFile)) {
                     Directory.CreateDirectory(destFile);
                     this.Invoke((MethodInvoker)(() => Log.Items.Add("Created directory " + destFile)));
                 }
+
+                // Recursively copy all files inside the directory
                 Copy_All(s, destFile);
             }
         }
@@ -173,7 +195,6 @@ namespace Syncronizer
         {
             Log.Items.Clear();
         }
-
 
         private void WriteData()
         {
@@ -185,27 +206,37 @@ namespace Syncronizer
             
             try
             {
-                if (!File.Exists("C:\\Users\\Korisnik\\Documents\\Node_data.data"))
+                // If the file doesn't exist create it
+                if (!File.Exists("Node_data.data"))
                 {
                     Log.Items.Add("Creating data file");
-                    File.Create("C:\\Users\\Korisnik\\Documents\\Node_data.data");
+                    File.Create("Node_data.data");
                     return;
                 }
-                StreamReader sr = new StreamReader("C:\\Users\\Korisnik\\Documents\\Node_data.data");
+
+                // Open file and read it
+                StreamReader sr = new StreamReader("Node_data.data");
                 while (!sr.EndOfStream)
                 {
+                    // Read the node name
                     String nodeName = sr.ReadLine();
                     List<String> NodePaths = new List<String>();
                     String Path;
+
+                    // Read node paths and store them in the list
                     while( !String.IsNullOrEmpty((Path = sr.ReadLine())))
                     {
                         NodePaths.Add(Path);
                     }
+
+                    // Add node with paths to dictionary
                     Nodes.Add(nodeName, NodePaths);
                     sr.ReadLine();
                 }
                 sr.Close();
             }
+
+            // Catch any exceptions
             catch(Exception e)
             {
                 Log.Items.Add(e);
