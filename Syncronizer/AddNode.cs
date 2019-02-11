@@ -42,7 +42,7 @@ namespace Syncronizer
                 InputName = Input.Text.Trim();
 
 
-                StreamWriter sw = new StreamWriter("C:\\Users\\Korisnik\\Documents\\Node_data.data", append: true);
+                StreamWriter sw = new StreamWriter("Node_data.data", append: true);
 
                 sw.WriteLine("");
                 sw.WriteLine(InputName);

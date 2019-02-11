@@ -36,6 +36,8 @@
             this.browseFolder = new System.Windows.Forms.FolderBrowserDialog();
             this.Browse = new System.Windows.Forms.Button();
             this.PathToAdd = new System.Windows.Forms.TextBox();
+            this.canReceive = new System.Windows.Forms.CheckBox();
+            this.canSend = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // NodeToAdd
@@ -102,11 +104,37 @@
             this.PathToAdd.Size = new System.Drawing.Size(276, 20);
             this.PathToAdd.TabIndex = 7;
             // 
+            // canReceive
+            // 
+            this.canReceive.AutoSize = true;
+            this.canReceive.Checked = true;
+            this.canReceive.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.canReceive.Location = new System.Drawing.Point(100, 77);
+            this.canReceive.Name = "canReceive";
+            this.canReceive.Size = new System.Drawing.Size(83, 17);
+            this.canReceive.TabIndex = 8;
+            this.canReceive.Text = "Can receive";
+            this.canReceive.UseVisualStyleBackColor = true;
+            // 
+            // canSend
+            // 
+            this.canSend.AutoSize = true;
+            this.canSend.Checked = true;
+            this.canSend.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.canSend.Location = new System.Drawing.Point(189, 77);
+            this.canSend.Name = "canSend";
+            this.canSend.Size = new System.Drawing.Size(71, 17);
+            this.canSend.TabIndex = 9;
+            this.canSend.Text = "Can send";
+            this.canSend.UseVisualStyleBackColor = true;
+            // 
             // AddNodePath
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(469, 106);
+            this.Controls.Add(this.canSend);
+            this.Controls.Add(this.canReceive);
             this.Controls.Add(this.PathToAdd);
             this.Controls.Add(this.Browse);
             this.Controls.Add(this.Cancel);
@@ -132,5 +160,7 @@
         private System.Windows.Forms.FolderBrowserDialog browseFolder;
         private System.Windows.Forms.Button Browse;
         private System.Windows.Forms.TextBox PathToAdd;
+        private System.Windows.Forms.CheckBox canReceive;
+        private System.Windows.Forms.CheckBox canSend;
     }
 }

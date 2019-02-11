@@ -15,7 +15,7 @@ namespace Syncronizer
     {
         private Dictionary<string, List<String>> NodeList;
         private String Path;
-
+        public bool receive, send;
         public string Path1 { get => Path; set => Path = value; }
 
         public AddNodePath(Dictionary<string, List<String>> Nodes)
@@ -46,26 +46,57 @@ namespace Syncronizer
             }
             else
             {
+                receive = canReceive.Checked;
+                send = canSend.Checked;
                 Path = PathToAdd.Text.Trim();
                 String nd = Path + "\\" + NodeToAdd.Text + ".node";
-                File.Create(Path);
-                NodeList[NodeToAdd.Text].Add(Path);
-                Path = nd;
-
-
-                StreamWriter sw = new StreamWriter("C:\\Users\\Korisnik\\Documents\\Node_data.data");
-
-                foreach(var t in NodeList)
+                if (File.Exists(nd))
                 {
-                    sw.WriteLine(t.Key);
-                    foreach(var s in t.Value)
+                    DialogResult result = MessageBox.Show("Node already exists at target location.\nDo you want to overwrite it?",
+                                                   "Confirmation", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+
+                    if (result == DialogResult.OK)
                     {
-                        sw.WriteLine(s);
+                        File.Create(nd).Close();
+                        Path = nd;
+
+
+                        StreamWriter sw = new StreamWriter("Node_data.data");
+
+                        foreach (var t in NodeList)
+                        {
+                            sw.WriteLine(t.Key);
+                            foreach (var s in t.Value)
+                            {
+                                sw.WriteLine(s);
+                            }
+                            sw.WriteLine("");
+                        }
+                        sw.Close();
+                        Close();
                     }
-                    sw.WriteLine("");
                 }
-                sw.Close();
-                Close();
+                else
+                {
+                    File.Create(nd).Close();
+                    NodeList[NodeToAdd.Text].Add(Path);
+                    Path = nd;
+
+
+                    StreamWriter sw = new StreamWriter("Node_data.data");
+
+                    foreach (var t in NodeList)
+                    {
+                        sw.WriteLine(t.Key);
+                        foreach (var s in t.Value)
+                        {
+                            sw.WriteLine(s);
+                        }
+                        sw.WriteLine("");
+                    }
+                    sw.Close();
+                    Close();
+                }
             }
             
         }
