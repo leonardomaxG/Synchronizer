@@ -12,7 +12,10 @@ namespace Syncronizer
 {
     public partial class ChooseNode : Form
     {
-        protected string CopyNode;
+        private string copyNode;
+
+        public string CopyNode { get => copyNode; set => copyNode = value; }
+
         public ChooseNode(List<String> IDs)
         {
 
@@ -37,14 +40,17 @@ namespace Syncronizer
 
         private void Submit_Click(object sender, EventArgs e)
         {
-            CopyNode = NodeToCopy.Text;
-            
-            Close();
+
+            if (NodeToCopy.Text == "")
+            {
+                MessageBox.Show("Please choose a node.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+            else
+            {
+                CopyNode = NodeToCopy.Text;
+
+                Close();
+            }
         }
-        public string getNode()
-        {
-            return CopyNode;
-        }
-        
     }
 }

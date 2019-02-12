@@ -39,6 +39,8 @@ namespace Syncronizer
             this.clearLog = new System.Windows.Forms.Button();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.Count = new System.Windows.Forms.Label();
             tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             tableLayoutPanel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -155,11 +157,29 @@ namespace Syncronizer
             this.tableLayoutPanel3.Size = new System.Drawing.Size(722, 176);
             this.tableLayoutPanel3.TabIndex = 9;
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(15, 401);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(679, 32);
+            this.progressBar1.TabIndex = 9;
+            // 
+            // Count
+            // 
+            this.Count.AutoSize = true;
+            this.Count.Location = new System.Drawing.Point(725, 411);
+            this.Count.Name = "Count";
+            this.Count.Size = new System.Drawing.Size(24, 13);
+            this.Count.TabIndex = 10;
+            this.Count.Text = "0/0";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(770, 449);
+            this.Controls.Add(this.Count);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.tableLayoutPanel2);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -183,6 +203,8 @@ namespace Syncronizer
         private System.Windows.Forms.Button Copy;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Label Count;
     }
 }
 

@@ -13,12 +13,12 @@ namespace Syncronizer
 {
     public partial class AddNodePath : Form
     {
-        private Dictionary<string, List<String>> NodeList;
+        private Dictionary<string, List<NodeClass>> NodeList;
         private String Path;
         public bool receive, send;
         public string Path1 { get => Path; set => Path = value; }
 
-        public AddNodePath(Dictionary<string, List<String>> Nodes)
+        public AddNodePath(Dictionary<string, List<NodeClass>> Nodes)
         {
             NodeList = Nodes;
             
@@ -58,29 +58,22 @@ namespace Syncronizer
                     if (result == DialogResult.OK)
                     {
                         File.Create(nd).Close();
-                        Path = nd;
-
-
-                        StreamWriter sw = new StreamWriter("Node_data.data");
-
-                        foreach (var t in NodeList)
-                        {
-                            sw.WriteLine(t.Key);
-                            foreach (var s in t.Value)
-                            {
-                                sw.WriteLine(s);
-                            }
-                            sw.WriteLine("");
-                        }
-                        sw.Close();
+                        
                         Close();
                     }
                 }
                 else
                 {
                     File.Create(nd).Close();
-                    NodeList[NodeToAdd.Text].Add(Path);
-                    Path = nd;
+
+                    NodeClass node = new NodeClass();
+                    node.Path = Path;
+                    node.NodeID = NodeToAdd.Text;
+                    node.CanSend = canSend.Checked;
+                    node.CanReceive = canReceive.Checked;
+
+                    NodeList[NodeToAdd.Text].Add(node);
+                    
 
 
                     StreamWriter sw = new StreamWriter("Node_data.data");
@@ -90,7 +83,7 @@ namespace Syncronizer
                         sw.WriteLine(t.Key);
                         foreach (var s in t.Value)
                         {
-                            sw.WriteLine(s);
+                            sw.WriteLine(s.Path);
                         }
                         sw.WriteLine("");
                     }

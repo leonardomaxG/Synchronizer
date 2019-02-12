@@ -10,7 +10,7 @@
 //Password protection
 //Encryption
 //List of files to be copied
-//Progress bar
+//Progress bar...............................................DONE
 //Multi threading............................................DONE
 //Set up multi-client connection
 //Set remote server connection
@@ -39,13 +39,13 @@ namespace Syncronizer
     {
 
 
-        private Dictionary<string, List<String>> Nodes = new Dictionary<string, List<string>>();
+        private Dictionary<string, List<NodeClass>> Nodes = new Dictionary<string, List<NodeClass>>();
         private List<Task> tasks = new List<Task>();
-
+        private int diffCount;
+        private int copied = 0;
         private string CopyNode;
         private ChooseNode nodeQuery;
         TcpListener server = null;
-        BackgroundWorker serverWorker = new BackgroundWorker();
 
         public Form1()
         {
@@ -100,7 +100,7 @@ namespace Syncronizer
             AddNodePath NewPath = new AddNodePath(Nodes);
             NewPath.ShowDialog(this);
 
-            // If path was entered clear node lit and load data
+            // If path was entered, write data to the new node, clear node dictionary and load data
             if (NewPath.Path1 != null)
             {
                 WriteNode(NewPath.Path1, NewPath.receive, NewPath.send);
@@ -126,7 +126,19 @@ namespace Syncronizer
             nodeQuery.ShowDialog(this);
 
             // Don't continue if no input was given
-            if ((CopyNode = nodeQuery.getNode()) == "") return; 
+            if ((CopyNode = nodeQuery.CopyNode) == null) return;
+
+            File_Difference(CopyNode);
+            
+            if(diffCount == 0)
+            {
+                Log.Items.Add("There is nothing to copy.");
+            }
+
+            progressBar1.Step = 1;
+            progressBar1.Maximum = diffCount;
+            progressBar1.Value = 0;
+            diffCount = 0;
 
             // Copy all files on a separate thread both ways
             Task.Factory.StartNew(() =>
@@ -134,77 +146,23 @@ namespace Syncronizer
                 for (int i = 0; i < Nodes[CopyNode].Count; i++)
                 {
                     // Path to first node
-                    String node1 = Nodes[CopyNode].ElementAt(i);
+                    NodeClass node1 = Nodes[CopyNode].ElementAt(i);
 
                     for (int j = i + 1; j < Nodes[CopyNode].Count; j++)
                     {
                         // Path to second node
-                        String node2 = Nodes[CopyNode].ElementAt(j);
+                        NodeClass node2 = Nodes[CopyNode].ElementAt(j);
 
-                        StreamReader sr1 = new StreamReader(node1 + "\\" + CopyNode + ".node");
-                        StreamReader sr2 = new StreamReader(node2 + "\\" + CopyNode + ".node");
-
-                        String i1, i2, i3, i4;
-                        i1 = GetHash("canSend=1");
-                        i2 = GetHash("canSend=0");
-                        i3 = GetHash("canReceive=1");
-                        i4 = GetHash("canReceive=0");
-
+                        if(node1.CanSend && node2.CanReceive)
+                        {
+                            Copy_All(node1.Path, node2.Path);
+                        }
                         
-                        var rec1 = sr1.ReadLine();
-                        var send1 = sr1.ReadLine();
-                        sr1.Close();
-
-                        var rec2 = sr2.ReadLine();
-                        var send2 = sr2.ReadLine();
-                        sr2.Close();
-
-                        // If the read line is empty, the file has been modified, skip if so
-                        if (String.IsNullOrEmpty(send1) || String.IsNullOrEmpty(rec1))
+                        if(node2.CanSend && node1.CanReceive)
                         {
-                            this.Invoke((MethodInvoker)(() => Log.Items.Add("Node file " + node1 + " is unreadable")));
-                            break;
+                            Copy_All(node1.Path, node2.Path);
                         }
-
-                        if (String.IsNullOrEmpty(send2) || String.IsNullOrEmpty(rec2))
-                        {
-                            this.Invoke((MethodInvoker)(() => Log.Items.Add("Node file " + node2 + " is unreadable")));
-                            continue;
-                        }
-
-
-                        // Check if node 1 can send and if node 2 can receive data
-                        // Break if the file has been modified or if node 1 cannot send data
-                        if (VerifyHash("canSend=1", send1) && VerifyHash("canReceive=1", rec2))
-                        {
-                            Copy_All(node1, node2);
-                        }
-
-                        else if(VerifyHash("canSend=0", send1))
-                        {
-                            break; 
-                        }
-                        else
-                        {
-                            this.Invoke((MethodInvoker)(() => Log.Items.Add("Node file:" + node1 + " has been modified outside of the application and will not work")));
-                            break;
-                        }
-
-                        // Check the other direction (node 2 -> node 1)
-                        if (send2.Equals(GetHash("canSend=1")) && rec2.Equals(GetHash("canReceive=1")))
-                        {
-                            Copy_All(node1, node2);
-                        }
-
-                        else if (send2.Equals("canSend=0"))
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            this.Invoke((MethodInvoker)(() => Log.Items.Add("Node file:" + node2 + " has been modified outside of the application and will not work")));
-                            continue;
-                        }
+                       
                     }
                 }
             });
@@ -246,6 +204,9 @@ namespace Syncronizer
 
                 //Copy the files
                 File.Copy(s, destFile, true);
+                copied++;
+                this.Invoke((MethodInvoker)(() => progressBar1.Value = copied));
+                this.Invoke((MethodInvoker)(() => Count.Text = copied + "/" + diffCount));
                 this.Invoke((MethodInvoker)(() => Log.Items.Add("Done: " + fileName)));
                
             }
@@ -254,6 +215,7 @@ namespace Syncronizer
                 // Determine destination directory and create it if it doesn't exist
                 fileName = Path.GetFileName(s);
                 destFile = Path.Combine(to, fileName);
+
                 if (!Directory.Exists(destFile)) {
                     Directory.CreateDirectory(destFile);
                     this.Invoke((MethodInvoker)(() => Log.Items.Add("Created directory " + destFile)));
@@ -318,13 +280,70 @@ namespace Syncronizer
                     // Skip potential empty lines on the start
                     if (String.IsNullOrEmpty(nodeName)) continue;
 
-                    List<String> NodePaths = new List<String>();
-                    String Path;
+                    List<NodeClass> NodePaths = new List<NodeClass>();
+
+                    
+                    String path;
 
                     // Read node paths and store them in the list
-                    while( !String.IsNullOrEmpty((Path = sr.ReadLine())))
+                    while( !String.IsNullOrEmpty((path = sr.ReadLine())))
                     {
-                        NodePaths.Add(Path);
+                        NodeClass node = new NodeClass();
+                        node.Path = path;
+                        node.NodeID = nodeName;
+
+                        StreamReader srNode = new StreamReader(path + "\\" + nodeName + ".node");
+                        String line = srNode.ReadLine();
+                        if (String.IsNullOrEmpty(line))
+                        {
+                            Log.Items.Add("Node at: " + path + " could not be read and it will be skipped");
+                            srNode.Close();
+                            continue;
+                        }
+
+
+                        if (line.Equals(GetHash("canReceive=1")))
+                        {
+                            node.CanReceive = true;
+                        }
+                        else if (line.Equals(GetHash("canReceive=0")))
+                        {
+                            node.CanReceive = false;
+                        }
+                        else
+                        {
+                            Log.Items.Add("Node at: " + path + " could not be read and it will be skipped");
+                            srNode.Close();
+                            continue;
+                        }
+
+
+                        line = srNode.ReadLine();
+
+                        if (String.IsNullOrEmpty(line))
+                        {
+                            Log.Items.Add("Node at: " + path + " could not be read and it will be skipped");
+                            srNode.Close();
+                            continue;
+                        }
+
+
+                        if (line.Equals(GetHash("canSend=1")))
+                        {
+                            node.CanSend = true;
+                        }
+                        else if (line.Equals(GetHash("canReceive=0")))
+                        {
+                            node.CanSend = false;
+                        }
+                        else
+                        {
+                            Log.Items.Add("Node at: " + path + " could not be read and it will be skipped");
+                            srNode.Close();
+                            continue;
+                        }
+                        
+                        NodePaths.Add(node);
                     }
 
                     // Add node with paths to dictionary
@@ -414,6 +433,80 @@ namespace Syncronizer
 
             return (comp.Compare(inputHash, hash) == 0);
         }
+
+        private void File_Difference(String nodeID)
+        {
+
+            int count = Nodes[nodeID].Count();
+
+            for(int i = 0; i < count; i++)
+            {
+
+                NodeClass node1 = Nodes[nodeID].ElementAt(i);
+
+                for (int j = i+1; j < count; j++)
+                {
+                    NodeClass node2 = Nodes[nodeID].ElementAt(j);
+
+                    if (node1.CanSend && node2.CanReceive)
+                    {
+                        Count(node1.Path, node2.Path);
+                    }
+
+                    if(node1.CanReceive && node2.CanSend)
+                    {
+                        Count(node2.Path, node1.Path);
+                    }
+
+
+                    void Count(String from, String to) {
+
+                        String[] files = Directory.GetFiles(from);
+                        String[] directories = Directory.GetDirectories(from);
+
+                        
+                        foreach (var file in files)
+                        {
+                            String fileName = Path.GetFileName(file);
+                            String destFile = Path.Combine(to, fileName);
+
+                            if (String.Compare(fileName, nodeID+ ".node") == 0)
+                            {
+                                continue;
+                            }
+
+                            if (!File.Exists(destFile))
+                            {
+                                diffCount++;
+                            }
+                        }
+
+                        foreach(var dir in directories)
+                        {
+                            String dirName = Path.GetFileName(dir);
+                            String destDir = Path.Combine(to, dirName);
+
+                            Count(dir, destDir);
+                        }
+                        
+                    }
+                }
+            }
+        }
+
+       
+    }
+
+    public class NodeClass
+    {
+        private String nodeID;
+        private bool canSend, canReceive;
+        private String path;
+
+        public string NodeID { get => nodeID; set => nodeID = value; }
+        public bool CanSend { get => canSend; set => canSend = value; }
+        public bool CanReceive { get => canReceive; set => canReceive = value; }
+        public string Path { get => path; set => path = value; }
     }
     
 }
