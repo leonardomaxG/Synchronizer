@@ -33,6 +33,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.Confirm = new System.Windows.Forms.Button();
             this.Cancel = new System.Windows.Forms.Button();
+            this.isNetwork = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // Input
@@ -59,10 +60,17 @@
             this.Cancel.UseVisualStyleBackColor = true;
             this.Cancel.Click += new System.EventHandler(this.Cancel_Click);
             // 
+            // isNetwork
+            // 
+            resources.ApplyResources(this.isNetwork, "isNetwork");
+            this.isNetwork.Name = "isNetwork";
+            this.isNetwork.UseVisualStyleBackColor = true;
+            // 
             // AddNode
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.isNetwork);
             this.Controls.Add(this.Cancel);
             this.Controls.Add(this.Confirm);
             this.Controls.Add(this.label1);
@@ -79,5 +87,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button Confirm;
         private System.Windows.Forms.Button Cancel;
+        private System.Windows.Forms.CheckBox isNetwork;
     }
 }

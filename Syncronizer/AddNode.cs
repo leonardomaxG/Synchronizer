@@ -41,11 +41,12 @@ namespace Syncronizer
             {
                 InputName = Input.Text.Trim();
 
+                bool network = isNetwork.Checked ? true : false;
 
                 StreamWriter sw = new StreamWriter("Node_data.data", append: true);
 
                 sw.WriteLine("");
-                sw.WriteLine(InputName);
+                sw.WriteLine(InputName + " " + (network ? "Network=1" : "Network=0"));
                 sw.Close();
                 Close();
             }

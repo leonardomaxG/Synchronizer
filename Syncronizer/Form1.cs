@@ -1,21 +1,21 @@
-﻿//Copy files from user location..............................DONE
-//Prompt the location........................................DONE
-//Log of copied files........................................DONE
-//Copy files if node exists..................................DONE
-//Copy files if node is the same.............................DONE
-//"Data" file................................................DONE
-//Create nodes...............................................DONE
-//Copy from-only and Copy to-only nodes......................DONE
-//Upgrade hashes
-//Password protection
-//Encryption
-//List of files to be copied
-//Progress bar...............................................DONE
-//Multi threading............................................DONE
-//Set up multi-client connection
-//Set remote server connection
-//Use ftp for file transfer over network
-//Pass for network nodes
+﻿// Copy files from user location..............................DONE
+// Prompt the location........................................DONE
+// Log of copied files........................................DONE
+// Copy files if node exists..................................DONE
+// Copy files if node is the same.............................DONE
+// "Data" file................................................DONE
+// Create nodes...............................................DONE
+// Copy from-only and Copy to-only nodes......................DONE
+// Upgrade hashes
+// Password protection
+// Encryption
+// List of files to be copied
+// Progress bar...............................................DONE
+// Multi threading............................................DONE
+// Set up multi-client connection
+// Set remote server connection...............................DONE
+// Use tcp for file transfer over network
+// Pass for network nodes
 //...
 
 
@@ -32,6 +32,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using NATUPNPLib;
 
 namespace Syncronizer
 {
@@ -39,13 +40,15 @@ namespace Syncronizer
     {
 
 
-        private Dictionary<string, List<NodeClass>> Nodes = new Dictionary<string, List<NodeClass>>();
+        private Dictionary<String, List<NodeClass>> Nodes = new Dictionary<String, List<NodeClass>>();
         private List<Task> tasks = new List<Task>();
         private int diffCount;
         private int copied = 0;
-        private string CopyNode;
+        private String CopyNode;
         private ChooseNode nodeQuery;
         TcpListener server = null;
+        UPnPNAT upnpnat = new UPnPNAT();
+        IStaticPortMappingCollection mappings;
 
         public Form1()
         {
@@ -65,8 +68,9 @@ namespace Syncronizer
         private void _Init()
         {
 
-            Log.Items.Add(GetHash("canReceive=1"));
-
+            /*mappings = upnpnat.StaticPortMappingCollection;
+            mappings.Add(80, "TCP", 80, "192.168.1.4", true, "Local Web Server");
+            */
             // Start server on a separate thread on init
             Task.Factory.StartNew(() =>
             {
@@ -228,6 +232,13 @@ namespace Syncronizer
 
         private void ClearLog_Click(object sender, EventArgs e)
         {
+            StreamWriter stream = new StreamWriter("log.txt");
+            int n = Log.Items.Count;
+            for(int i = 0; i < n; i++)
+            {
+                stream.WriteLine(Log.Items[i]);
+            }
+            stream.Close();
             Log.Items.Clear();
         }
 
@@ -275,10 +286,25 @@ namespace Syncronizer
                 while (!sr.EndOfStream)
                 {
                     // Read the node name
-                    String nodeName = sr.ReadLine();
+                    String str = sr.ReadLine();
+
 
                     // Skip potential empty lines on the start
-                    if (String.IsNullOrEmpty(nodeName)) continue;
+                    if (String.IsNullOrEmpty(str)) continue;
+
+                    String[] info = str.Split(' ');
+                    String nodeName = info[0];
+                    String net = info[1];
+                    bool network;
+
+                    if (net.Equals("Network=1"))
+                    {
+                        network = true;
+                    }
+                    else
+                    {
+                        network = false;
+                    }
 
                     List<NodeClass> NodePaths = new List<NodeClass>();
 
@@ -291,6 +317,7 @@ namespace Syncronizer
                         NodeClass node = new NodeClass();
                         node.Path = path;
                         node.NodeID = nodeName;
+                        node.IsNetwork = network;
 
                         StreamReader srNode = new StreamReader(path + "\\" + nodeName + ".node");
                         String line = srNode.ReadLine();
@@ -348,7 +375,7 @@ namespace Syncronizer
 
                     // Add node with paths to dictionary
                     Nodes.Add(nodeName, NodePaths);
-                    sr.ReadLine();
+                    
                 }
                 sr.Close();
             }
@@ -363,45 +390,116 @@ namespace Syncronizer
 
         private void Server_Start()
         {
-            try
+
+            while (true)
             {
-                // Set port on 13000 and ip adress to local adress
-                Int32 port = 13000;
-                IPAddress IP = IPAddress.Parse("127.0.0.1");
-
-                // Create server and start listening 
-                server = new TcpListener(IP, port);
-                server.Start();
-
-                // Buffer for data
-                Byte[] bytes = new byte[256];
-                String data = string.Empty;
-                this.Invoke((MethodInvoker)(() => Log.Items.Add("Server started on ip: " + IP.ToString())));
-                while (true)
+                try
                 {
+                    // Set port on 13000
+                    int port = 13000;
 
-                    // Accepting requests
-                    TcpClient client = server.AcceptTcpClient();
+                    //Get the ip adress for the server
+                    String localIp;
 
-                    // Get the stream object
-                    NetworkStream stream = client.GetStream();
-
-                    int i;
-
-                    while((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+                    using (var client = new WebClient())
                     {
-                        data = Encoding.ASCII.GetString(bytes, 0, i);
-
-                        this.Invoke((MethodInvoker)(() => Log.Items.Add(data)));
+                        // Try connecting to Google public DNS and get the local endpoint as IP
+                        // If failed to connect set IP as local IP
+                        if (CheckForInternetConnection())
+                        {
+                            try
+                            {
+                                using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+                                {
+                                    socket.Connect("8.8.8.8", 65530);
+                                    IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+                                    localIp = endPoint.Address.ToString();
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                localIp = "127.0.0.1";
+                            }
+                        }
+                        else
+                        {
+                            localIp = "127.0.0.1";
+                        }
                     }
 
+
+                    IPAddress IP = IPAddress.Parse(localIp);
+
+                    // Create listener and start listening 
+                    server = new TcpListener(IP, port);
+                    server.Start();
+
+                    // Buffer for data
+                    Byte[] bytes = new byte[256];
+                    String data = string.Empty;
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add("Server started on ip: " + IP.ToString())));
+                    while (true)
+                    {
+
+                        // Accepting requests
+                        TcpClient client = server.AcceptTcpClient();
+
+                        // Get the stream object
+                        NetworkStream stream = client.GetStream();
+
+                        // Read length of file name
+                        byte[] nameLength = new byte[4];
+                        stream.Read(nameLength, 0, 4);
+                        int nameSize = BitConverter.ToInt32(nameLength, 0);
+
+                        // Read the name of file
+                        byte[] name = new byte[nameSize];
+                        stream.Read(name, 0, nameSize);
+                        String fileName = Encoding.UTF8.GetString(name);
+
+                        // Read size of file
+                        byte[] fileSizeB = new byte[4];
+                        stream.Read(fileSizeB, 0, 4);
+                        int fileSize = BitConverter.ToInt32(fileSizeB, 0);
+
+                        // Read start signal
+                        byte[] startB = new byte[9 + 1];
+                        stream.Read(startB, 0, 9);
+                        String start = Encoding.UTF8.GetString(startB);
+
+                        this.Invoke((MethodInvoker)(() => Log.Items.Add("Size of name: " + nameSize.ToString())));
+                        this.Invoke((MethodInvoker)(() => Log.Items.Add("Name of file: " + fileName)));
+                        this.Invoke((MethodInvoker)(() => Log.Items.Add("File size: " + fileSize.ToString())));
+                        this.Invoke((MethodInvoker)(() => Log.Items.Add("Start signal: " + start)));
+
+                        int bytesReceived = 0;
+                        byte[] file = new byte[fileSize];
+
+                        while (bytesReceived < fileSize)
+                        {
+                            byte[] PacketSizeB = new byte[4];
+                            stream.Read(PacketSizeB, 0, 4);
+                            int PacketSize = BitConverter.ToInt32(PacketSizeB, 0);
+                            
+                            stream.Read(file, bytesReceived, PacketSize);
+
+                            bytesReceived += PacketSize;
+                        }
+
+                        File.WriteAllBytes(fileName, file);
+                        
+
+                        // Response to client
+                        byte[] message = Encoding.UTF8.GetBytes("Testmessage");
+                        stream.Write(message, 0, message.Length);
+                    }
+                    server.Stop();
+                    Log.Items.Add("Server started on ip: " + IP.ToString());
                 }
-                server.Stop();
-                Log.Items.Add("Server started on ip: " + IP.ToString());
-            }
-            catch (Exception e)
-            {
-                this.Invoke((MethodInvoker)(() => Log.Items.Add(e)));
+                catch (Exception e)
+                {
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add(e)));
+                }
             }
            
         }
@@ -494,7 +592,133 @@ namespace Syncronizer
             }
         }
 
-       
+        private void AddNetworkNode_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+            Task.Factory.StartNew(() =>
+            {
+                IPAddress iP = IPAddress.Parse(ConnectIp.Text);
+                int port = 13000;
+                int buffersize = 1024;
+
+                TcpClient client = new TcpClient();
+                NetworkStream netStream;
+
+                // Try to connect to server
+                try
+                {
+                    client.Connect(new IPEndPoint(iP, port));
+                }
+                catch (Exception ex)
+                {
+                    this.Invoke((MethodInvoker)(() => Log.Items.Add(ex.Message)));
+                    return;
+                }
+
+                netStream = client.GetStream();
+
+                String path = @"C:\Users\USER\Documents\ppt\raspored1.png";
+
+                String Filename = Path.GetFileName(path);
+
+                // We wish to send some data in advance:
+                // File name, file size, number of packets, send start and send end
+
+                byte[] data = File.ReadAllBytes(path);
+
+                // First packet contains: name size, file name, file size and "sendStart" signal
+                byte[] nameSize = BitConverter.GetBytes(Encoding.UTF8.GetByteCount(Filename)); // Int
+                byte[] nameB = Encoding.UTF8.GetBytes(Filename);
+                byte[] fileSize = BitConverter.GetBytes(data.Length);
+                byte[] start = Encoding.UTF8.GetBytes("sendStart");
+
+                // Last packet constains: "sendEnd" signal to stop reading netStream
+                byte[] end = Encoding.UTF8.GetBytes("sendEnd");
+
+                // Creating the first package: nameSize, fileName, fileSize and start signal
+                byte[] FirstPackage = new byte[4 + nameB.Length + 4 + 9];
+                nameSize.CopyTo(FirstPackage, 0);
+                nameB.CopyTo(FirstPackage, 4);
+                fileSize.CopyTo(FirstPackage, 4 + nameB.Length);
+                start.CopyTo(FirstPackage, 4 + nameB.Length + 4);
+
+                // Send the first pckage
+                netStream.Write(FirstPackage, 0, FirstPackage.Length);
+
+                // Send the file
+                int bytesSent = 0;
+                int bytesLeft = data.Length;
+                int sendSize;
+                byte[] filePackage = new byte[buffersize];
+
+                while (bytesLeft > 0)
+                {
+                    sendSize = (data.Length - bytesSent < 1024) ? bytesLeft : buffersize;
+
+                    netStream.Write(BitConverter.GetBytes(sendSize), 0, 4);
+
+                    Array.Copy(data, bytesSent, filePackage, 0, sendSize);
+                    netStream.Write(filePackage, 0, buffersize);
+                    bytesSent += sendSize;
+                    bytesLeft -= sendSize;
+
+                }
+
+
+
+
+
+
+
+
+
+                byte[] answer = new byte[30];
+
+                // Read the response
+                netStream.Read(answer, 0, 11);
+
+                netStream.Close();
+
+                this.Invoke((MethodInvoker)(() => Log.Items.Add(Encoding.UTF8.GetString(answer))));
+
+                client.Close();
+            });
+        }
+        
+        public static String GetPublicIPAddress()
+        {
+            using(var client = new WebClient())
+            {
+                String site = client.DownloadString("http://checkip.dyn.com");
+
+                String publicIP = site.Substring(site.IndexOf(": ") + 2, site.IndexOf("</body>") - site.IndexOf(": ") - 2);
+
+                return publicIP;
+            }
+        }
+        
+        public static bool CheckForInternetConnection()
+        {
+            try
+            {
+                using (var client = new WebClient())
+                using (client.OpenRead("http://clients3.google.com/generate_204"))
+                {
+
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
     }
 
     public class NodeClass
@@ -502,11 +726,13 @@ namespace Syncronizer
         private String nodeID;
         private bool canSend, canReceive;
         private String path;
+        private bool isNetwork;
 
         public string NodeID { get => nodeID; set => nodeID = value; }
         public bool CanSend { get => canSend; set => canSend = value; }
         public bool CanReceive { get => canReceive; set => canReceive = value; }
         public string Path { get => path; set => path = value; }
+        public bool IsNetwork { get => isNetwork; set => isNetwork = value; }
     }
     
 }
